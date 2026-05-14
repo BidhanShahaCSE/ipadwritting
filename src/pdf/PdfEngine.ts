@@ -22,8 +22,14 @@ export async function loadPdfDocument(id: string, data: ArrayBuffer): Promise<PD
   return pdfDoc;
 }
 
-export async function renderPdfPageToCanvas(pdfId: string, pageIndex: number, data?: ArrayBuffer): Promise<HTMLCanvasElement | null> {
-  const cacheKey = `${pdfId}-${pageIndex}`;
+export async function renderPdfPageToCanvas(
+  pdfId: string,
+  pageIndex: number,
+  data?: ArrayBuffer,
+  scale: number = 2
+): Promise<HTMLCanvasElement | null> {
+  const safeScale = Math.max(1, Math.min(4, scale));
+  const cacheKey = `${pdfId}-${pageIndex}-${safeScale.toFixed(2)}`;
   if (pageCache.has(cacheKey)) {
     return pageCache.get(cacheKey)!;
   }
@@ -37,7 +43,7 @@ export async function renderPdfPageToCanvas(pdfId: string, pageIndex: number, da
 
     // pageIndex is 0-based in our app, PDF.js is 1-based
     const page = await pdfDoc.getPage(pageIndex + 1);
-    const viewport = page.getViewport({ scale: 2.0 }); // Render at 2x for retina quality
+    const viewport = page.getViewport({ scale: safeScale });
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');

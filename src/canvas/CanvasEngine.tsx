@@ -97,6 +97,32 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
 
   const outerW = pageSize.width * zoom;
   const outerH = pageSize.height * zoom;
+  const pixelRatio = typeof window === 'undefined' ? 1 : Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+
+  const prepareCanvas = useCallback(
+    (canvas: HTMLCanvasElement | null): CanvasRenderingContext2D | null => {
+      if (!canvas) return null;
+
+      const pixelWidth = Math.max(1, Math.round(pageSize.width * pixelRatio));
+      const pixelHeight = Math.max(1, Math.round(pageSize.height * pixelRatio));
+
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+      }
+
+      canvas.style.width = `${pageSize.width}px`;
+      canvas.style.height = `${pageSize.height}px`;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(pixelRatio, pixelRatio);
+      return ctx;
+    },
+    [pageSize.width, pageSize.height, pixelRatio]
+  );
 
   const setPageWrap = useCallback(
     (element: HTMLDivElement | null) => {
@@ -116,53 +142,38 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
   );
 
   const renderBg = useCallback(async () => {
-    const canvas = bgCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = prepareCanvas(bgCanvasRef.current);
     if (!ctx) return;
-
-    canvas.width = pageSize.width;
-    canvas.height = pageSize.height;
 
     if (pdfId && page.pdfPageIndex !== undefined) {
       const pdfData = useAppStore.getState().pdfs.find((p) => p.id === pdfId)?.data;
-      const pdfCanvas = await renderPdfPageToCanvas(pdfId, page.pdfPageIndex, pdfData);
+      const pdfScale = Math.max(2, pixelRatio * 1.5);
+      const pdfCanvas = await renderPdfPageToCanvas(pdfId, page.pdfPageIndex, pdfData, pdfScale);
       if (pdfCanvas) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(pdfCanvas, 0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(pdfCanvas, 0, 0, pageSize.width, pageSize.height);
         return;
       }
     }
 
     renderBackground(ctx, pageSize.width, pageSize.height, page.background, darkMode);
-  }, [pageSize.width, pageSize.height, page.background, page.pdfPageIndex, pdfId, darkMode]);
+  }, [prepareCanvas, pdfId, page.pdfPageIndex, page.background, pageSize.width, pageSize.height, darkMode, pixelRatio]);
 
   const renderStrokes = useCallback(() => {
-    const canvas = strokeCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = prepareCanvas(strokeCanvasRef.current);
     if (!ctx) return;
-
-    canvas.width = pageSize.width;
-    canvas.height = pageSize.height;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     renderAllStrokes(ctx, page.strokes, 1);
 
     if (isActive && selectedStrokeIds.length > 0) {
       const selected = page.strokes.filter((s) => selectedStrokeIds.includes(s.id));
       renderSelectionHighlight(ctx, selected);
     }
-  }, [page.strokes, pageSize.width, pageSize.height, selectedStrokeIds, isActive]);
+  }, [prepareCanvas, page.strokes, selectedStrokeIds, isActive]);
 
   const renderActive = useCallback(() => {
-    const canvas = activeCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = prepareCanvas(activeCanvasRef.current);
     if (!ctx) return;
-
-    canvas.width = pageSize.width;
-    canvas.height = pageSize.height;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (isActive && activeStroke) {
       renderActiveStroke(ctx, activeStroke);
@@ -177,8 +188,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
       renderShapePreview(ctx, activeShape, shapeStart, shapeEnd, strokeColor, strokeSize, strokeOpacity);
     }
   }, [
-    pageSize.width,
-    pageSize.height,
+    prepareCanvas,
     isActive,
     activeStroke,
     lassoPoints,
@@ -263,9 +273,15 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
     (e: React.PointerEvent) => {
       if (activePageIndex !== pageIndex) setActivePageIndex(pageIndex);
 
+      const isTouch = e.pointerType === 'touch';
+
+      // While drawing tools are active, ignore finger input so palm/touches
+      // do not trigger page movement on iPad.
+      if (isTouch && activeTool !== 'hand') return;
+
       touchesRef.current.set(e.pointerId, e.nativeEvent);
 
-      if (touchesRef.current.size === 2 && e.pointerType === 'touch') {
+      if (activeTool === 'hand' && touchesRef.current.size === 2 && isTouch) {
         const touches = Array.from(touchesRef.current.values());
         const dx = touches[1].clientX - touches[0].clientX;
         const dy = touches[1].clientY - touches[0].clientY;
@@ -282,7 +298,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
         return;
       }
 
-      if (e.pointerType === 'touch') return;
+      if (isTouch) return;
 
       const pos = getCanvasPos(e);
 
@@ -356,6 +372,9 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      const isTouch = e.pointerType === 'touch';
+      if (isTouch && activeTool !== 'hand') return;
+
       touchesRef.current.set(e.pointerId, e.nativeEvent);
 
       if (activeTool === 'eraser' && pageWrapRef.current) {
@@ -402,7 +421,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
       }
 
       if (!isDrawing) return;
-      if (e.pointerType === 'touch') return;
+      if (isTouch) return;
 
       const pos = getCanvasPos(e);
 
@@ -598,12 +617,13 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
             left: 0,
             width: pageSize.width,
             height: pageSize.height,
-            touchAction: 'pan-y',
+            touchAction: activeTool === 'hand' ? 'pan-y' : 'none',
             cursor: activeTool === 'eraser' ? 'none' : activeTool === 'hand' ? 'grab' : 'crosshair',
           }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerUp}
         />
 
