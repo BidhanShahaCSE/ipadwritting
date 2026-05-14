@@ -661,7 +661,8 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
             left: 0,
             width: pageSize.width,
             height: pageSize.height,
-            touchAction: activeTool === 'hand' ? 'pan-y' : 'none',
+            // Finger should always be able to scroll notes; pen/mouse still use drawing logic.
+            touchAction: 'pan-y',
             cursor: activeTool === 'eraser' ? 'none' : activeTool === 'hand' ? 'grab' : 'crosshair',
           }}
           onPointerDown={handlePointerDown}
@@ -857,6 +858,8 @@ const CanvasEngine: React.FC = () => {
       style={{
         overflowY: 'auto',
         overflowX: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',

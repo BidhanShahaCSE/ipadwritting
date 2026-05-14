@@ -112,18 +112,16 @@ export function renderBackground(
   width: number,
   height: number,
   background: string,
-  isDark: boolean
+  _isDark: boolean
 ): void {
-  // Fill base color
-  if (background === 'dark') {
-    ctx.fillStyle = '#1C1C1E';
-  } else {
-    ctx.fillStyle = isDark ? '#2C2C2E' : '#FFFFFF';
-  }
+  // Keep page paper color stable regardless of app UI theme.
+  // Only explicit "dark" paper uses dark colors.
+  const isDarkPaper = background === 'dark';
+  ctx.fillStyle = isDarkPaper ? '#1C1C1E' : '#FFFFFF';
   ctx.fillRect(0, 0, width, height);
 
-  const lineColor = isDark ? '#38383A' : '#E5E5EA';
-  const dotColor = isDark ? '#48484A' : '#D1D1D6';
+  const lineColor = isDarkPaper ? '#38383A' : '#E5E5EA';
+  const dotColor = isDarkPaper ? '#48484A' : '#D1D1D6';
 
   ctx.strokeStyle = lineColor;
   ctx.fillStyle = dotColor;
