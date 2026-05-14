@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNoteStore, createNewNote } from '../store/useNoteStore';
 import { useAppStore } from '../store/useAppStore';
-import { saveNote, deleteNote as dbDeleteNote, getAllNotes, getAllPDFs, saveFolder, deleteFolder as dbDeleteFolder, getAllFolders } from '../db/database';
+import { saveNote, deleteNote as dbDeleteNote, getAllNotes, getAllPDFs, savePDF, saveFolder, deleteFolder as dbDeleteFolder, getAllFolders } from '../db/database';
 import { readFileAsArrayBuffer } from '../utils/helpers';
 import { formatRelativeDate } from '../utils/helpers';
 import type { PDFDocument, Note } from '../types';
@@ -110,11 +110,15 @@ const Sidebar: React.FC = () => {
       pageCount: 0, annotations: {}, createdAt: Date.now(), updatedAt: Date.now(),
     };
     addPdf(pdf);
+    await savePDF(pdf);
     e.target.value = '';
     try {
       const { loadPdfDocument } = await import('../pdf/PdfEngine');
       const pdfDoc = await loadPdfDocument(pdf.id, data);
       const pageCount = pdfDoc.numPages;
+
+      // Keep the persisted PDF record up to date.
+      await savePDF({ ...pdf, pageCount, updatedAt: Date.now() });
       const pages = [];
       for (let i = 0; i < pageCount; i++) {
         const page = await pdfDoc.getPage(i + 1);
@@ -178,10 +182,10 @@ const Sidebar: React.FC = () => {
           <span style={{color: 'var(--color-accent)'}}>MY</span>NOTE
         </h1>
         <div className="relative mb-3">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" fill="none" stroke="var(--color-text-secondary)" viewBox="0 0 24 24">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" fill="none" stroke="var(--color-text-secondary)" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
-          <input type="search" placeholder="Search notes..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+          <input type="search" placeholder="Search notes..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
         </div>
         <div className="flex gap-1 rounded-xl p-1" style={{background: 'var(--color-hover)'}}>
           {(['notes', 'pdfs', 'folders'] as const).map(tab => (
