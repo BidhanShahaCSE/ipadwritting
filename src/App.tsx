@@ -12,10 +12,14 @@ import SplitView from './components/SplitView';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useNoteStore } from './store/useNoteStore';
+import { useAppStore } from './store/useAppStore';
 
 const App: React.FC = () => {
   const { activeNote } = useNoteStore();
   const { isDirty } = useNoteStore();
+  const { pdfFocusMode, setPdfFocusMode, togglePdfFocusMode } = useAppStore();
+
+  const isFocusMode = pdfFocusMode && Boolean(activeNote);
 
   useAutoSave();
   useKeyboardShortcuts();
@@ -23,7 +27,10 @@ const App: React.FC = () => {
   // Prevent default touch behaviors on iPad
   useEffect(() => {
     const prevent = (e: TouchEvent) => {
-      if ((e.target as HTMLElement)?.closest('.canvas-container')) {
+      const target = e.target as HTMLElement | null;
+      // Allow natural scrolling inside the continuous canvas scroll area
+      if (target?.closest('.canvas-scroll')) return;
+      if (target?.closest('.canvas-container')) {
         e.preventDefault();
       }
     };
@@ -117,6 +124,13 @@ const App: React.FC = () => {
     };
   }, [activeNote]);
 
+  // If there is no active note, leave focus mode.
+  useEffect(() => {
+    if (pdfFocusMode && !activeNote) {
+      setPdfFocusMode(false);
+    }
+  }, [pdfFocusMode, activeNote, setPdfFocusMode]);
+
   return (
     <div className="flex h-full w-full overflow-hidden" style={{background: 'var(--color-bg)'}}>
       {/* Sidebar */}
@@ -125,34 +139,71 @@ const App: React.FC = () => {
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Top toolbar */}
-        <TopToolbar />
+        {!isFocusMode && <TopToolbar />}
+
+        {/* Full-screen mode exit button */}
+        {isFocusMode && (
+          <button
+            className="glass tool-btn absolute z-50"
+            onClick={togglePdfFocusMode}
+            title="Exit Full Screen"
+            style={{
+              top: 'calc(env(safe-area-inset-top) + 0.5rem)',
+              right: '0.5rem',
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
 
         {/* Canvas area with thumbnail strip */}
-        <div className="flex-1 flex overflow-hidden relative">
+        <div
+          className="flex-1 flex overflow-hidden relative"
+          style={
+            isFocusMode
+              ? {
+                  paddingTop: 'env(safe-area-inset-top)',
+                  paddingBottom: 'env(safe-area-inset-bottom)',
+                }
+              : undefined
+          }
+        >
           {/* Page thumbnails */}
-          {activeNote && <PageThumbnailStrip />}
+          {activeNote && !isFocusMode && <PageThumbnailStrip />}
 
           {/* Canvas */}
           <CanvasEngine />
 
           {/* Color picker popup */}
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50">
-            <ColorPicker />
-          </div>
+          {!isFocusMode && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50">
+              <ColorPicker />
+            </div>
+          )}
 
           {/* Pen size popup */}
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50">
-            <PenSizeSelector />
-          </div>
+          {!isFocusMode && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50">
+              <PenSizeSelector />
+            </div>
+          )}
         </div>
 
         {/* Bottom toolbar */}
-        <BottomToolbar />
+        {!isFocusMode && <BottomToolbar />}
 
         {/* Auto-save indicator */}
         {isDirty && (
-          <div className="absolute top-14 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium animate-fade-in"
-            style={{background: 'var(--color-hover)', color: 'var(--color-text-secondary)'}}>
+          <div
+            className="absolute right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium animate-fade-in"
+            style={{
+              background: 'var(--color-hover)',
+              color: 'var(--color-text-secondary)',
+              top: 'calc(env(safe-area-inset-top) + 3.5rem)',
+            }}
+          >
             <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
             Saving...
           </div>

@@ -21,7 +21,11 @@ const PageThumbnailStrip: React.FC = () => {
         <div
           key={page.id}
           className={`thumbnail-item ${activePageIndex === idx ? 'active' : ''}`}
-          onClick={() => setActivePageIndex(idx)}
+          onClick={() => {
+            setActivePageIndex(idx);
+            const el = document.querySelector(`[data-page-index="${idx}"]`) as HTMLElement | null;
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
         >
           <div
             className="w-full h-full"

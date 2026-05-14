@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNoteStore, createNewNote } from '../store/useNoteStore';
 import { useAppStore } from '../store/useAppStore';
-import { saveNote, deleteNote as dbDeleteNote, getAllNotes, getAllPDFs, savePDF, saveFolder, deleteFolder as dbDeleteFolder, getAllFolders } from '../db/database';
+import { saveNote, deleteNote as dbDeleteNote, getAllNotes, getAllPDFs, savePDF, deletePDF as dbDeletePDF, saveFolder, deleteFolder as dbDeleteFolder, getAllFolders } from '../db/database';
 import { readFileAsArrayBuffer } from '../utils/helpers';
 import { formatRelativeDate } from '../utils/helpers';
 import type { PDFDocument, Note } from '../types';
@@ -18,7 +18,7 @@ const Sidebar: React.FC = () => {
   const {
     sidebarOpen, notes, setNotes, addNote, removeNote, updateNote,
     searchQuery, setSearchQuery, sidebarTab, setSidebarTab,
-    pdfs, setPdfs, addPdf, folders, setFolders, addFolder, updateFolder, removeFolder,
+    pdfs, setPdfs, addPdf, removePdf, folders, setFolders, addFolder, updateFolder, removeFolder,
     selectedFolderId, setSelectedFolderId,
   } = useAppStore();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -58,6 +58,30 @@ const Sidebar: React.FC = () => {
     removeNote(id);
     if (activeNote?.id === id) setActiveNote(null);
     setContextMenu(null);
+  };
+
+  const handleDeletePdf = async (id: string) => {
+    await dbDeletePDF(id);
+    removePdf(id);
+
+    const linkedNotes = notes.filter((n) => n.pdfId === id);
+    for (const note of linkedNotes) {
+      await dbDeleteNote(note.id);
+      removeNote(note.id);
+    }
+
+    if (activeNote && (activeNote.pdfId === id || linkedNotes.some((n) => n.id === activeNote.id))) {
+      setActiveNote(null);
+    }
+  };
+
+  const handleClearAllPdfs = async () => {
+    if (pdfs.length === 0) return;
+    const ok = window.confirm(`Clear all ${pdfs.length} PDFs? Linked PDF notes will also be removed.`);
+    if (!ok) return;
+    for (const pdf of pdfs) {
+      await handleDeletePdf(pdf.id);
+    }
   };
 
   const handleRename = async (id: string) => {
@@ -185,7 +209,7 @@ const Sidebar: React.FC = () => {
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" fill="none" stroke="var(--color-text-secondary)" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
-          <input type="search" placeholder="Search notes..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+          <input type="search" placeholder="Search notes..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="sidebar-search-input" />
         </div>
         <div className="flex gap-1 rounded-xl p-1" style={{background: 'var(--color-hover)'}}>
           {(['notes', 'pdfs', 'folders'] as const).map(tab => (
@@ -256,20 +280,46 @@ const Sidebar: React.FC = () => {
           </div>
         ))}
 
-        {sidebarTab === 'pdfs' && pdfs.map(pdf => {
-          const linkedNote = notes.find(n => n.pdfId === pdf.id);
-          return (
-            <div key={pdf.id} className={`note-card ${activeNote?.pdfId === pdf.id ? 'selected' : ''}`}
-              onClick={() => { if (linkedNote) setActiveNote(linkedNote); }}>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#FF3B30" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-                </svg>
-                <span className="text-sm font-medium truncate" style={{color: 'var(--color-text)'}}>{pdf.title}</span>
+        {sidebarTab === 'pdfs' && (
+          <>
+            {pdfs.length > 0 && (
+              <div className="px-1 pb-1">
+                <button
+                  onClick={handleClearAllPdfs}
+                  className="w-full text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                  style={{ background: 'rgba(255, 59, 48, 0.12)', color: 'var(--color-danger)' }}
+                >
+                  Clear All PDFs
+                </button>
               </div>
-            </div>
-          );
-        })}
+            )}
+            {pdfs.map(pdf => {
+              const linkedNote = notes.find(n => n.pdfId === pdf.id);
+              return (
+                <div key={pdf.id} className={`note-card relative ${activeNote?.pdfId === pdf.id ? 'selected' : ''}`}
+                  onClick={() => { if (linkedNote) setActiveNote(linkedNote); }}>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="#FF3B30" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                    </svg>
+                    <span className="text-sm font-medium truncate pr-7" style={{color: 'var(--color-text)'}}>{pdf.title}</span>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeletePdf(pdf.id); }}
+                    className="absolute top-2 right-2 flex items-center justify-center w-6 h-6 rounded-md"
+                    style={{ color: 'var(--color-text-secondary)', background: 'var(--color-hover)' }}
+                    title="Clear PDF"
+                    aria-label={`Clear ${pdf.title}`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
+          </>
+        )}
 
         {sidebarTab === 'folders' && (
           <>

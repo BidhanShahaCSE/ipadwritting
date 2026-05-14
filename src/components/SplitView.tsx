@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useNoteStore } from '../store/useNoteStore';
-import { exportNoteToPDF, shareNote } from '../export/ExportManager';
+import { exportNoteToPDF, saveNoteToFiles, shareNote } from '../export/ExportManager';
 
 const SplitView: React.FC = () => {
   const { showSplitView, setShowSplitView, notes } = useAppStore();
@@ -35,6 +35,16 @@ const SplitView: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                 </svg>
                 Export PDF
+              </button>
+              <button
+                onClick={() => { saveNoteToFiles(activeNote); setShowSplitView(false); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={{background: '#0A7CFF', color: 'white'}}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3.75v10.5m0 0l3.75-3.75M12 14.25L8.25 10.5M3.75 16.5v1.875A1.875 1.875 0 005.625 20.25h12.75a1.875 1.875 0 001.875-1.875V16.5" />
+                </svg>
+                Save to Files
               </button>
               <button
                 onClick={() => { shareNote(activeNote); setShowSplitView(false); }}

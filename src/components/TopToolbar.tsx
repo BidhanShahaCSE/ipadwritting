@@ -16,8 +16,11 @@ const TopToolbar: React.FC = () => {
     setShowColorPicker, showColorPicker,
     setShowPenSizeSelector, showPenSizeSelector,
     setIsRecording, isRecording, setShowSplitView,
+    pdfFocusMode, togglePdfFocusMode,
   } = useAppStore();
   const imgInputRef = useRef<HTMLInputElement>(null);
+
+  const hasActiveNote = Boolean(activeNote);
 
   const tools: { id: ToolType; icon: string; label: string }[] = [
     { id: 'pen', icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z', label: 'Pen' },
@@ -61,7 +64,13 @@ const TopToolbar: React.FC = () => {
   };
 
   return (
-    <div className="glass flex items-center gap-1 px-3 py-2 border-b" style={{borderColor: 'var(--color-border)'}}>
+    <div
+      className="glass flex items-center gap-1 px-3 pb-2 border-b"
+      style={{
+        borderColor: 'var(--color-border)',
+        paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)',
+      }}
+    >
       {/* Sidebar toggle */}
       <button className="tool-btn" onClick={toggleSidebar}>
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,6 +161,28 @@ const TopToolbar: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 4.5v15m6-15v15M3.75 4.5h16.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z" />
         </svg>
       </button>
+
+      {/* Fullscreen (focus mode) */}
+      {hasActiveNote && (
+        <button
+          className={`tool-btn ${pdfFocusMode ? 'active' : ''}`}
+          onClick={togglePdfFocusMode}
+          title={pdfFocusMode ? 'Exit Full Screen' : 'Full Screen'}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d={
+                pdfFocusMode
+                  ? 'M9 9H5.25V5.25M15 9h3.75V5.25M9 15H5.25v3.75M15 15h3.75v3.75'
+                  : 'M4.5 9V4.5H9M19.5 9V4.5H15M4.5 15v4.5H9M19.5 15v4.5H15'
+              }
+            />
+          </svg>
+        </button>
+      )}
 
       {/* Dark mode toggle */}
       <button className="tool-btn" onClick={toggleDarkMode} title={darkMode ? 'Light Mode' : 'Dark Mode'}>

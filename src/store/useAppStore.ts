@@ -5,6 +5,8 @@ interface AppState {
   /* ── UI state ────────────────────────── */
   sidebarOpen: boolean;
   darkMode: boolean;
+  pdfFocusMode: boolean;
+  pdfFocusPrevSidebarOpen: boolean;
   sidebarTab: 'notes' | 'pdfs' | 'folders';
   searchQuery: string;
   selectedFolderId: string | null;
@@ -31,6 +33,8 @@ interface AppState {
   toggleSidebar: () => void;
   setDarkMode: (dark: boolean) => void;
   toggleDarkMode: () => void;
+  setPdfFocusMode: (focus: boolean) => void;
+  togglePdfFocusMode: () => void;
   setSidebarTab: (tab: 'notes' | 'pdfs' | 'folders') => void;
   setSearchQuery: (q: string) => void;
   setSelectedFolderId: (id: string | null) => void;
@@ -63,6 +67,8 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   sidebarOpen: true,
   darkMode: false,
+  pdfFocusMode: false,
+  pdfFocusPrevSidebarOpen: true,
   sidebarTab: 'notes',
   searchQuery: '',
   selectedFolderId: null,
@@ -95,6 +101,47 @@ export const useAppStore = create<AppState>((set) => ({
         document.documentElement.classList.remove('dark');
       }
       return { darkMode: next };
+    }),
+
+  setPdfFocusMode: (focus) =>
+    set((s) => {
+      if (focus) {
+        return {
+          pdfFocusMode: true,
+          pdfFocusPrevSidebarOpen: s.sidebarOpen,
+          sidebarOpen: false,
+          showColorPicker: false,
+          showPenSizeSelector: false,
+          showSplitView: false,
+        };
+      }
+
+      return {
+        pdfFocusMode: false,
+        sidebarOpen: s.pdfFocusPrevSidebarOpen,
+        showColorPicker: false,
+        showPenSizeSelector: false,
+      };
+    }),
+  togglePdfFocusMode: () =>
+    set((s) => {
+      const next = !s.pdfFocusMode;
+      if (next) {
+        return {
+          pdfFocusMode: true,
+          pdfFocusPrevSidebarOpen: s.sidebarOpen,
+          sidebarOpen: false,
+          showColorPicker: false,
+          showPenSizeSelector: false,
+          showSplitView: false,
+        };
+      }
+      return {
+        pdfFocusMode: false,
+        sidebarOpen: s.pdfFocusPrevSidebarOpen,
+        showColorPicker: false,
+        showPenSizeSelector: false,
+      };
     }),
   setSidebarTab: (tab) => set({ sidebarTab: tab }),
   setSearchQuery: (q) => set({ searchQuery: q }),
