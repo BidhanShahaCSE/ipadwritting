@@ -1,0 +1,585 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #FFFFFF;
+  --color-sidebar: #F2F2F7;
+  --color-toolbar: #FFFFFF;
+  --color-text: #1C1C1E;
+  --color-text-secondary: #8E8E93;
+  --color-border: #E5E5EA;
+  --color-accent: #007AFF;
+  --color-accent-hover: #0066D6;
+  --color-hover: rgba(0, 0, 0, 0.04);
+  --color-active: rgba(0, 122, 255, 0.12);
+  --color-glass: rgba(255, 255, 255, 0.72);
+  --color-glass-border: rgba(255, 255, 255, 0.3);
+  --color-danger: #FF3B30;
+  --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-popup: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --color-bg: #1C1C1E;
+  --color-sidebar: #111111;
+  --color-toolbar: #1C1C1E;
+  --color-text: #FFFFFF;
+  --color-text-secondary: #8E8E93;
+  --color-border: #38383A;
+  --color-accent: #0A84FF;
+  --color-accent-hover: #409CFF;
+  --color-hover: rgba(255, 255, 255, 0.06);
+  --color-active: rgba(10, 132, 255, 0.2);
+  --color-glass: rgba(28, 28, 30, 0.72);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-danger: #FF453A;
+  --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-popup: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-secondary);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+/* ─── Glass morphism ─────────────────────────────────── */
+.glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border);
+}
+
+/* ─── Toolbar button ─────────────────────────────────── */
+.tool-btn {
+  @apply relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150 ease-out;
+  color: var(--color-text);
+}
+
+.tool-btn:hover {
+  background: var(--color-hover);
+}
+
+.tool-btn.active {
+  background: var(--color-active);
+  color: var(--color-accent);
+}
+
+.tool-btn:active {
+  transform: scale(0.92);
+}
+
+.tool-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ─── Sidebar note card ──────────────────────────────── */
+.note-card {
+  @apply relative p-3 rounded-xl cursor-pointer transition-all duration-150;
+  background: transparent;
+}
+
+.note-card:hover {
+  background: var(--color-hover);
+}
+
+.note-card.selected {
+  background: var(--color-active);
+}
+
+.note-card .note-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1;
+}
+
+/* ─── Canvas container ───────────────────────────────── */
+.canvas-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* ─── Text box on canvas ─────────────────────────────── */
+.canvas-textbox {
+  position: absolute;
+  min-width: 100px;
+  min-height: 30px;
+  padding: 8px 12px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: var(--color-text);
+  cursor: text;
+  z-index: 20;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.canvas-textbox:hover {
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.canvas-textbox.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.canvas-textbox:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+/* ─── Text box resize handle ─────────────────────────── */
+.textbox-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  border: 2px solid white;
+  z-index: 22;
+  cursor: nwse-resize;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* ─── Image element on canvas ────────────────────────── */
+.canvas-image {
+  position: absolute;
+  cursor: grab;
+  z-index: 15;
+  transition: outline-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.canvas-image:active {
+  cursor: grabbing;
+}
+
+.canvas-image.selected {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+}
+
+.canvas-image .resize-handle {
+  @apply absolute w-3 h-3 rounded-full;
+  background: var(--color-accent);
+  border: 2px solid white;
+  z-index: 16;
+  cursor: nwse-resize;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.canvas-image.selected .resize-handle {
+  opacity: 1;
+}
+
+.canvas-image .delete-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 17;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.canvas-image.selected .delete-btn {
+  opacity: 1;
+}
+
+.canvas-image .delete-btn:hover {
+  transform: scale(1.1);
+}
+
+/* ─── Eraser cursor ──────────────────────────────────── */
+.eraser-cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 30;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.1s ease, height 0.1s ease;
+}
+
+.dark .eraser-cursor {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ─── Audio widget ───────────────────────────────────── */
+.audio-widget {
+  @apply flex items-center gap-3 p-3 rounded-2xl;
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: var(--shadow-card);
+}
+
+/* ─── Split view pane ────────────────────────────────── */
+.split-pane {
+  @apply relative flex flex-col overflow-hidden rounded-2xl;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-popup);
+}
+
+/* ─── Recording overlay ──────────────────────────────── */
+.recording-overlay {
+  @apply fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full z-50;
+  background: rgba(255, 59, 48, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(255, 59, 48, 0.3);
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* ─── Page backgrounds ───────────────────────────────── */
+.page-lined {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 31px,
+    #E5E5EA 31px,
+    #E5E5EA 32px
+  );
+}
+
+.dark .page-lined {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 31px,
+    #38383A 31px,
+    #38383A 32px
+  );
+}
+
+.page-dotted {
+  background-image: radial-gradient(circle, #D1D1D6 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .page-dotted {
+  background-image: radial-gradient(circle, #48484A 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.page-graph {
+  background-image:
+    linear-gradient(#E5E5EA 1px, transparent 1px),
+    linear-gradient(90deg, #E5E5EA 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .page-graph {
+  background-image:
+    linear-gradient(#38383A 1px, transparent 1px),
+    linear-gradient(90deg, #38383A 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ─── Frosted glass popup ────────────────────────────── */
+.frosted-popup {
+  background: var(--color-glass);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: var(--shadow-popup);
+  border-radius: 16px;
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* ─── Color swatch ───────────────────────────────────── */
+.color-swatch {
+  @apply w-7 h-7 rounded-full cursor-pointer transition-transform duration-150 border-2 border-transparent;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.color-swatch.selected {
+  border-color: var(--color-accent);
+  transform: scale(1.15);
+  box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
+}
+
+/* ─── Thumbnail strip ────────────────────────────────── */
+.thumbnail-strip {
+  @apply flex flex-col gap-2 p-2 overflow-y-auto;
+  width: 100px;
+  background: var(--color-sidebar);
+  border-right: 1px solid var(--color-border);
+}
+
+.thumbnail-item {
+  @apply relative rounded-lg overflow-hidden cursor-pointer transition-all duration-150;
+  border: 2px solid transparent;
+  aspect-ratio: 0.707;
+}
+
+.thumbnail-item:hover {
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.thumbnail-item.active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+}
+
+/* ─── Context menu ───────────────────────────────────── */
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-glass);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: var(--shadow-popup);
+  animation: scaleIn 0.15s ease-out;
+}
+
+.context-menu-item {
+  @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer;
+  color: var(--color-text);
+}
+
+.context-menu-item:hover {
+  background: var(--color-hover);
+}
+
+.context-menu-item.danger {
+  color: var(--color-danger);
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(255, 59, 48, 0.1);
+}
+
+.context-menu-separator {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--color-border);
+}
+
+/* ─── Text formatting toolbar ────────────────────────── */
+.text-format-toolbar {
+  position: absolute;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  background: var(--color-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: var(--shadow-popup);
+  animation: scaleIn 0.15s ease-out;
+}
+
+.text-format-toolbar button {
+  @apply flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-100;
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.text-format-toolbar button:hover {
+  background: var(--color-hover);
+}
+
+.text-format-toolbar button.active {
+  background: var(--color-active);
+  color: var(--color-accent);
+}
+
+/* ─── Folder item ────────────────────────────────────── */
+.folder-item {
+  @apply flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all duration-150;
+}
+
+.folder-item:hover {
+  background: var(--color-hover);
+}
+
+.folder-item.selected {
+  background: var(--color-active);
+}
+
+/* ─── Tooltip ────────────────────────────────────────── */
+.tooltip {
+  @apply absolute px-2 py-1 text-xs font-medium rounded-lg whitespace-nowrap pointer-events-none opacity-0 transition-opacity duration-150;
+  background: var(--color-text);
+  color: var(--color-bg);
+  z-index: 100;
+}
+
+.tool-btn:hover .tooltip {
+  opacity: 1;
+}
+
+/* ─── Waveform ───────────────────────────────────────── */
+.waveform-bar {
+  @apply rounded-full;
+  background: white;
+  min-height: 3px;
+  transition: height 0.05s ease-out;
+}
+
+/* ─── Sidebar transition ─────────────────────────────── */
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+/* ─── Input styling ──────────────────────────────────── */
+input[type="text"], input[type="search"] {
+  @apply w-full px-3 py-2 rounded-xl text-sm;
+  background: var(--color-hover);
+  color: var(--color-text);
+  border: 1px solid transparent;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+input[type="text"]:focus, input[type="search"]:focus {
+  border-color: var(--color-accent);
+  background: var(--color-bg);
+}
+
+/* ─── Range slider ───────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ─── Note thumbnail preview ─────────────────────────── */
+.note-thumbnail {
+  width: 44px;
+  height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #F2F2F7;
+  border: 1px solid var(--color-border);
+}
+
+.dark .note-thumbnail {
+  background: #2C2C2E;
+}
+
+.note-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ─── Keyframe Animations ────────────────────────────── */
+@keyframes scaleIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideIn {
+  0% { transform: translateX(-100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulseRecord {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Loading spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}

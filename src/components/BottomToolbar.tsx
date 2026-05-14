@@ -1,0 +1,112 @@
+import React from 'react';
+import { useNoteStore } from '../store/useNoteStore';
+import type { BackgroundType } from '../types';
+
+const BottomToolbar: React.FC = () => {
+  const {
+    activeNote, activePageIndex, setActivePageIndex,
+    addPage, removePage, setPageBackground, zoom, setZoom,
+  } = useNoteStore();
+
+  if (!activeNote) return null;
+  const totalPages = activeNote.pages.length;
+  const currentPage = activeNote.pages[activePageIndex];
+
+  const backgrounds: { id: BackgroundType; label: string }[] = [
+    { id: 'blank', label: '⬜' },
+    { id: 'lined', label: '📝' },
+    { id: 'dotted', label: '⬡' },
+    { id: 'graph', label: '📐' },
+    { id: 'dark', label: '⬛' },
+  ];
+
+  return (
+    <div className="glass flex items-center gap-2 px-4 py-2 border-t" style={{borderColor: 'var(--color-border)'}}>
+      {/* Page navigation */}
+      <button
+        className="tool-btn"
+        onClick={() => setActivePageIndex(Math.max(0, activePageIndex - 1))}
+        disabled={activePageIndex === 0}
+        style={{opacity: activePageIndex === 0 ? 0.3 : 1}}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+      </button>
+
+      <span className="text-xs font-medium px-2" style={{color: 'var(--color-text-secondary)'}}>
+        {activePageIndex + 1} / {totalPages}
+      </span>
+
+      <button
+        className="tool-btn"
+        onClick={() => setActivePageIndex(Math.min(totalPages - 1, activePageIndex + 1))}
+        disabled={activePageIndex === totalPages - 1}
+        style={{opacity: activePageIndex === totalPages - 1 ? 0.3 : 1}}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 mx-1" style={{background: 'var(--color-border)'}} />
+
+      {/* Add / Remove page */}
+      <button className="tool-btn" onClick={() => addPage(currentPage.background, currentPage.pageSize)} title="Add Page">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+      </button>
+      <button
+        className="tool-btn"
+        onClick={() => removePage(activePageIndex)}
+        disabled={totalPages <= 1}
+        style={{opacity: totalPages <= 1 ? 0.3 : 1}}
+        title="Delete Page"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 12h-15" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 mx-1" style={{background: 'var(--color-border)'}} />
+
+      {/* Background selector */}
+      <div className="flex gap-1">
+        {backgrounds.map(bg => (
+          <button
+            key={bg.id}
+            onClick={() => setPageBackground(activePageIndex, bg.id)}
+            className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center transition-all ${currentPage.background === bg.id ? 'ring-2 ring-blue-500' : ''}`}
+            style={{background: 'var(--color-hover)'}}
+            title={bg.id}
+          >
+            {bg.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Zoom controls */}
+      <button className="tool-btn" onClick={() => setZoom(zoom - 0.1)} title="Zoom Out">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM13.5 10.5h-6" />
+        </svg>
+      </button>
+      <span className="text-xs font-mono min-w-[3rem] text-center" style={{color: 'var(--color-text-secondary)'}}>
+        {Math.round(zoom * 100)}%
+      </span>
+      <button className="tool-btn" onClick={() => setZoom(zoom + 0.1)} title="Zoom In">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
+        </svg>
+      </button>
+      <button className="tool-btn" onClick={() => setZoom(1)} title="Reset Zoom">
+        <span className="text-xs font-medium">1:1</span>
+      </button>
+    </div>
+  );
+};
+
+export default BottomToolbar;
