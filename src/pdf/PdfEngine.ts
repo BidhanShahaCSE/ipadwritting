@@ -7,6 +7,7 @@ GlobalWorkerOptions.workerSrc = workerSrc;
 
 const docCache = new Map<string, PDFDocumentProxy>();
 const pageCache = new Map<string, HTMLCanvasElement>();
+const PAGE_CACHE_VERSION = 'v2';
 
 export async function loadPdfDocument(id: string, data: ArrayBuffer): Promise<PDFDocumentProxy> {
   if (docCache.has(id)) {
@@ -29,7 +30,7 @@ export async function renderPdfPageToCanvas(
   scale: number = 2
 ): Promise<HTMLCanvasElement | null> {
   const safeScale = Math.max(1, Math.min(6, scale));
-  const cacheKey = `${pdfId}-${pageIndex}-${safeScale.toFixed(2)}`;
+  const cacheKey = `${PAGE_CACHE_VERSION}-${pdfId}-${pageIndex}-${safeScale.toFixed(3)}`;
   if (pageCache.has(cacheKey)) {
     return pageCache.get(cacheKey)!;
   }
@@ -44,8 +45,8 @@ export async function renderPdfPageToCanvas(
     // pageIndex is 0-based in our app, PDF.js is 1-based
     const page = await pdfDoc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale: safeScale });
-    const canvasWidth = Math.max(1, Math.round(viewport.width));
-    const canvasHeight = Math.max(1, Math.round(viewport.height));
+    const canvasWidth = Math.max(1, Math.floor(viewport.width));
+    const canvasHeight = Math.max(1, Math.floor(viewport.height));
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -54,9 +55,13 @@ export async function renderPdfPageToCanvas(
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
 
+    // Keep PDF pixels aligned with the backing canvas even when viewport dimensions are fractional.
+    const sx = canvasWidth / viewport.width;
+    const sy = canvasHeight / viewport.height;
     const renderContext = {
       canvasContext: ctx,
       viewport,
+      transform: sx !== 1 || sy !== 1 ? [sx, 0, 0, sy, 0, 0] : undefined,
     };
 
     await page.render(renderContext as any).promise;

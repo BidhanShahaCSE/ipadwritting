@@ -149,7 +149,9 @@ const Sidebar: React.FC = () => {
         const viewport = page.getViewport({ scale: 1.0 });
         pages.push({
           id: uuid(), background: 'blank' as const, pageSize: 'custom' as const,
-          customWidth: viewport.width, customHeight: viewport.height, pdfPageIndex: i,
+          customWidth: Math.max(1, Math.round(viewport.width)),
+          customHeight: Math.max(1, Math.round(viewport.height)),
+          pdfPageIndex: i,
           strokes: [], textBoxes: [], images: [], audioIds: [],
         });
       }

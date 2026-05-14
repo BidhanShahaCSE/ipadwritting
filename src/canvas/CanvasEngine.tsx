@@ -52,6 +52,8 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
     midY: 0,
   });
   const touchesRef = useRef<Map<number, PointerEvent>>(new Map());
+  const pinchZoomRafRef = useRef<number | null>(null);
+  const pinchZoomPendingRef = useRef<number | null>(null);
   const [eraserPos, setEraserPos] = useState<{ x: number; y: number } | null>(null);
   const [dragImg, setDragImg] = useState<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
   const [resizeImg, setResizeImg] = useState<{ id: string; startX: number; startY: number; origW: number; origH: number } | null>(null);
@@ -92,7 +94,11 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
 
   const pageSize =
     page.pageSize === 'custom' && page.customWidth && page.customHeight
-      ? { width: page.customWidth, height: page.customHeight }
+      ? {
+          // Fractional CSS sizes can make canvas/PDF content look soft on iPad/Safari.
+          width: Math.max(1, Math.round(page.customWidth)),
+          height: Math.max(1, Math.round(page.customHeight)),
+        }
       : PAGE_SIZES[page.pageSize];
 
   const outerW = pageSize.width * zoom;
@@ -208,9 +214,44 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
 
   useEffect(() => {
     renderBg();
+  }, [renderBg]);
+
+  useEffect(() => {
     renderStrokes();
+  }, [renderStrokes]);
+
+  useEffect(() => {
     renderActive();
-  }, [renderBg, renderStrokes, renderActive]);
+  }, [renderActive]);
+
+  const schedulePinchZoom = useCallback(
+    (nextZoom: number) => {
+      pinchZoomPendingRef.current = nextZoom;
+
+      if (typeof window === 'undefined') {
+        setZoom(nextZoom);
+        return;
+      }
+
+      if (pinchZoomRafRef.current !== null) return;
+      pinchZoomRafRef.current = window.requestAnimationFrame(() => {
+        pinchZoomRafRef.current = null;
+        const pending = pinchZoomPendingRef.current;
+        if (pending !== null) {
+          setZoom(pending);
+        }
+      });
+    },
+    [setZoom]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && pinchZoomRafRef.current !== null) {
+        window.cancelAnimationFrame(pinchZoomRafRef.current);
+      }
+    };
+  }, []);
 
   const handleErase = useCallback(
     (x: number, y: number) => {
@@ -278,30 +319,29 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
 
       const isTouch = e.pointerType === 'touch';
 
-      // While drawing tools are active, ignore finger input so palm/touches
-      // do not trigger page movement on iPad.
-      if (isTouch && activeTool !== 'hand') return;
+      if (isTouch) {
+        touchesRef.current.set(e.pointerId, e.nativeEvent);
 
-      touchesRef.current.set(e.pointerId, e.nativeEvent);
+        if (touchesRef.current.size === 2) {
+          const touches = Array.from(touchesRef.current.values());
+          const dx = touches[1].clientX - touches[0].clientX;
+          const dy = touches[1].clientY - touches[0].clientY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          setGestureState({
+            active: true,
+            initialDist: dist,
+            initialZoom: zoom,
+            midX: (touches[0].clientX + touches[1].clientX) / 2,
+            midY: (touches[0].clientY + touches[1].clientY) / 2,
+          });
+          setIsDrawing(false);
+          setActiveStroke(null);
+          return;
+        }
 
-      if (activeTool === 'hand' && touchesRef.current.size === 2 && isTouch) {
-        const touches = Array.from(touchesRef.current.values());
-        const dx = touches[1].clientX - touches[0].clientX;
-        const dy = touches[1].clientY - touches[0].clientY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        setGestureState({
-          active: true,
-          initialDist: dist,
-          initialZoom: zoom,
-          midX: (touches[0].clientX + touches[1].clientX) / 2,
-          midY: (touches[0].clientY + touches[1].clientY) / 2,
-        });
-        setIsDrawing(false);
-        setActiveStroke(null);
+        // Keep single-finger touch for scrolling and avoid accidental finger/palm strokes.
         return;
       }
-
-      if (isTouch) return;
 
       const pos = getCanvasPos(e);
 
@@ -376,9 +416,10 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       const isTouch = e.pointerType === 'touch';
-      if (isTouch && activeTool !== 'hand') return;
 
-      touchesRef.current.set(e.pointerId, e.nativeEvent);
+      if (isTouch) {
+        touchesRef.current.set(e.pointerId, e.nativeEvent);
+      }
 
       if (activeTool === 'eraser' && pageWrapRef.current) {
         const rect = pageWrapRef.current.getBoundingClientRect();
@@ -419,12 +460,12 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
         const dist = Math.sqrt(dx * dx + dy * dy);
         const scale = dist / gestureState.initialDist;
         const newZoom = Math.max(0.25, Math.min(5, gestureState.initialZoom * scale));
-        setZoom(newZoom);
+        schedulePinchZoom(newZoom);
         return;
       }
+      if (isTouch) return;
 
       if (!isDrawing) return;
-      if (isTouch) return;
 
       const pos = getCanvasPos(e);
 
@@ -458,7 +499,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
       isDrawing,
       activeStroke,
       handleErase,
-      setZoom,
+      schedulePinchZoom,
       setActiveStroke,
       updateImageOnActivePage,
       updateTextBoxOnActivePage,
