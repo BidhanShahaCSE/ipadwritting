@@ -16,14 +16,18 @@ const BottomToolbar: React.FC = () => {
   if (!activeNote) return null;
   const totalPages = activeNote.pages.length;
   const currentPage = activeNote.pages[activePageIndex];
+  const isPdfNote = Boolean(activeNote.pdfId);
 
-  const backgrounds: { id: BackgroundType; label: string; title: string }[] = [
+  const allBackgrounds: { id: BackgroundType; label: string; title: string }[] = [
     { id: 'blank', label: 'B', title: 'Blank' },
     { id: 'lined', label: 'L', title: 'Lined' },
     { id: 'dotted', label: 'D', title: 'Dotted' },
     { id: 'graph', label: 'G', title: 'Graph' },
     { id: 'dark', label: 'N', title: 'Dark' },
   ];
+  const backgrounds = isPdfNote
+    ? allBackgrounds.filter((bg) => bg.id === 'graph' || bg.id === 'dark')
+    : allBackgrounds;
 
   return (
     <div
