@@ -21,6 +21,16 @@ const TopToolbar: React.FC = () => {
   const imgInputRef = useRef<HTMLInputElement>(null);
 
   const hasActiveNote = Boolean(activeNote);
+  const openPenSettings = () => {
+    if (activeTool === 'pen') {
+      setShowPenSizeSelector(!showPenSizeSelector);
+      return;
+    }
+
+    setActiveTool('pen');
+    setShowColorPicker(false);
+    setShowPenSizeSelector(true);
+  };
 
   const tools: { id: ToolType; icon: string; label: string }[] = [
     { id: 'pen', icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z', label: 'Pen' },
@@ -99,8 +109,16 @@ const TopToolbar: React.FC = () => {
         <button
           key={t.id}
           className={`tool-btn ${activeTool === t.id ? 'active' : ''}`}
-          onClick={() => setActiveTool(t.id)}
-          title={t.label}
+          onClick={() => {
+            if (t.id === 'pen') {
+              openPenSettings();
+              return;
+            }
+
+            setActiveTool(t.id);
+            setShowPenSizeSelector(false);
+          }}
+          title={t.id === 'pen' ? 'Pen settings' : t.label}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={t.icon} />
@@ -116,7 +134,11 @@ const TopToolbar: React.FC = () => {
       </button>
 
       {/* Size button */}
-      <button className="tool-btn" onClick={() => { setShowPenSizeSelector(!showPenSizeSelector); setShowColorPicker(false); }}>
+      <button
+        className="tool-btn"
+        onClick={() => { setShowPenSizeSelector(!showPenSizeSelector); setShowColorPicker(false); }}
+        title="Pen size / intensity"
+      >
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="12" r="3" />
           <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.4" />

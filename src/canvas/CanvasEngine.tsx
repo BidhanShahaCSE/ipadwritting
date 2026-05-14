@@ -98,13 +98,16 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
   const outerW = pageSize.width * zoom;
   const outerH = pageSize.height * zoom;
   const pixelRatio = typeof window === 'undefined' ? 1 : Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  // Match the actual device pixel ratio closely so PDF text and strokes stay crisp.
+  // We still cap the bitmap size to avoid very large allocations at high zoom.
+  const canvasRenderScale = Math.max(1, Math.min(4, pixelRatio * zoom));
 
   const prepareCanvas = useCallback(
     (canvas: HTMLCanvasElement | null): CanvasRenderingContext2D | null => {
       if (!canvas) return null;
 
-      const pixelWidth = Math.max(1, Math.round(pageSize.width * pixelRatio));
-      const pixelHeight = Math.max(1, Math.round(pageSize.height * pixelRatio));
+      const pixelWidth = Math.max(1, Math.round(pageSize.width * canvasRenderScale));
+      const pixelHeight = Math.max(1, Math.round(pageSize.height * canvasRenderScale));
 
       if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
         canvas.width = pixelWidth;
@@ -118,10 +121,10 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
       if (!ctx) return null;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(pixelRatio, pixelRatio);
+      ctx.scale(canvasRenderScale, canvasRenderScale);
       return ctx;
     },
-    [pageSize.width, pageSize.height, pixelRatio]
+    [pageSize.width, pageSize.height, canvasRenderScale]
   );
 
   const setPageWrap = useCallback(
@@ -147,7 +150,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
 
     if (pdfId && page.pdfPageIndex !== undefined) {
       const pdfData = useAppStore.getState().pdfs.find((p) => p.id === pdfId)?.data;
-      const pdfScale = Math.max(2, pixelRatio * 1.5);
+      const pdfScale = canvasRenderScale;
       const pdfCanvas = await renderPdfPageToCanvas(pdfId, page.pdfPageIndex, pdfData, pdfScale);
       if (pdfCanvas) {
         ctx.imageSmoothingEnabled = true;
@@ -158,7 +161,7 @@ const CanvasPage: React.FC<CanvasPageProps> = ({ page, pageIndex, pdfId, isActiv
     }
 
     renderBackground(ctx, pageSize.width, pageSize.height, page.background, darkMode);
-  }, [prepareCanvas, pdfId, page.pdfPageIndex, page.background, pageSize.width, pageSize.height, darkMode, pixelRatio]);
+  }, [prepareCanvas, pdfId, page.pdfPageIndex, page.background, pageSize.width, pageSize.height, darkMode, canvasRenderScale]);
 
   const renderStrokes = useCallback(() => {
     const ctx = prepareCanvas(strokeCanvasRef.current);

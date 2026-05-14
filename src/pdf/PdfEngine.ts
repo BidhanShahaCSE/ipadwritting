@@ -28,7 +28,7 @@ export async function renderPdfPageToCanvas(
   data?: ArrayBuffer,
   scale: number = 2
 ): Promise<HTMLCanvasElement | null> {
-  const safeScale = Math.max(1, Math.min(4, scale));
+  const safeScale = Math.max(1, Math.min(6, scale));
   const cacheKey = `${pdfId}-${pageIndex}-${safeScale.toFixed(2)}`;
   if (pageCache.has(cacheKey)) {
     return pageCache.get(cacheKey)!;
@@ -44,13 +44,15 @@ export async function renderPdfPageToCanvas(
     // pageIndex is 0-based in our app, PDF.js is 1-based
     const page = await pdfDoc.getPage(pageIndex + 1);
     const viewport = page.getViewport({ scale: safeScale });
+    const canvasWidth = Math.max(1, Math.round(viewport.width));
+    const canvasHeight = Math.max(1, Math.round(viewport.height));
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     const renderContext = {
       canvasContext: ctx,

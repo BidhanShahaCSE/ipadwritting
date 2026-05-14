@@ -36,7 +36,11 @@ const PenSizeSelector: React.FC = () => {
     <div className="frosted-popup absolute bottom-14 left-1/2 -translate-x-1/2 p-4 z-50 animate-scale-in" style={{width: 240}}
       onPointerDown={e => e.stopPropagation()}>
       <div className="text-xs font-medium mb-3" style={{color:'var(--color-text-secondary)'}}>
-        {activeTool === 'eraser' ? 'Eraser' : activeTool === 'highlighter' ? 'Highlighter' : 'Pen'} Size
+        {activeTool === 'eraser'
+          ? 'Eraser Size'
+          : activeTool === 'highlighter'
+            ? 'Highlighter Size / Intensity'
+            : 'Pen Size / Intensity'}
       </div>
 
       {/* Size presets */}
