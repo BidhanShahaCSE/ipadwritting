@@ -24,8 +24,10 @@ interface NoteState {
   activeShape: ShapeType;
   strokeColor: string;
   strokeSize: number;
+  strokeOpacity: number;
   highlighterColor: string;
   highlighterSize: number;
+  highlighterOpacity: number;
   eraserSize: number;
   fontSize: number;
   fontFamily: string;
@@ -57,8 +59,10 @@ interface NoteState {
   setActiveShape: (shape: ShapeType) => void;
   setStrokeColor: (color: string) => void;
   setStrokeSize: (size: number) => void;
+  setStrokeOpacity: (opacity: number) => void;
   setHighlighterColor: (color: string) => void;
   setHighlighterSize: (size: number) => void;
+  setHighlighterOpacity: (opacity: number) => void;
   setEraserSize: (size: number) => void;
   setFontSize: (size: number) => void;
   setFontFamily: (family: string) => void;
@@ -135,8 +139,10 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   activeShape: 'rectangle',
   strokeColor: '#000000',
   strokeSize: 3,
+  strokeOpacity: 1,
   highlighterColor: '#FFCC00',
   highlighterSize: 20,
+  highlighterOpacity: 0.4,
   eraserSize: 20,
   fontSize: 16,
   fontFamily: 'Inter',
@@ -165,8 +171,10 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   setActiveShape: (shape) => set({ activeShape: shape }),
   setStrokeColor: (color) => set({ strokeColor: color }),
   setStrokeSize: (size) => set({ strokeSize: size }),
+  setStrokeOpacity: (opacity) => set({ strokeOpacity: Math.max(0.05, Math.min(1, opacity)) }),
   setHighlighterColor: (color) => set({ highlighterColor: color }),
   setHighlighterSize: (size) => set({ highlighterSize: size }),
+  setHighlighterOpacity: (opacity) => set({ highlighterOpacity: Math.max(0.05, Math.min(1, opacity)) }),
   setEraserSize: (size) => set({ eraserSize: size }),
   setFontSize: (size) => set({ fontSize: size }),
   setFontFamily: (family) => set({ fontFamily: family }),

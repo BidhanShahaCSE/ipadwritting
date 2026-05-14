@@ -53,6 +53,8 @@ html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  /* Ensure content sits below device status bars (iOS notch / status area). Use safe-area inset when available, falling back to 12px */
+  padding-top: env(safe-area-inset-top, 12px);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);

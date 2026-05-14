@@ -15,7 +15,7 @@ export function renderStroke(
 
   if (stroke.tool === 'highlighter') {
     ctx.globalCompositeOperation = 'multiply';
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = stroke.opacity;
     ctx.strokeStyle = stroke.color;
   } else {
     ctx.globalCompositeOperation = 'source-over';
@@ -258,9 +258,11 @@ export function renderLinePreview(
   start: { x: number; y: number },
   end: { x: number; y: number },
   color: string,
-  size: number
+  size: number,
+  opacity: number = 1
 ): void {
   ctx.save();
+  ctx.globalAlpha = opacity;
   ctx.strokeStyle = color;
   ctx.lineWidth = size;
   ctx.lineCap = 'round';
@@ -279,9 +281,11 @@ export function renderShapePreview(
   start: { x: number; y: number },
   end: { x: number; y: number },
   color: string,
-  size: number
+  size: number,
+  opacity: number = 1
 ): void {
   ctx.save();
+  ctx.globalAlpha = opacity;
   ctx.strokeStyle = color;
   ctx.lineWidth = size;
   ctx.lineCap = 'round';

@@ -35,6 +35,7 @@ const CanvasEngine: React.FC = () => {
   const {
     activeNote, activePageIndex, activeTool, activeShape,
     strokeColor, strokeSize, highlighterColor, highlighterSize,
+    strokeOpacity, highlighterOpacity,
     eraserSize, zoom, panX, panY,
     isDrawing, activeStroke, selectedStrokeIds,
     setZoom, setPan, setIsDrawing, setActiveStroke,
@@ -119,12 +120,12 @@ const CanvasEngine: React.FC = () => {
       renderLassoPath(ctx, lassoPoints);
     }
     if (lineStart && lineEnd && activeTool === 'line') {
-      renderLinePreview(ctx, lineStart, lineEnd, strokeColor, strokeSize);
+      renderLinePreview(ctx, lineStart, lineEnd, strokeColor, strokeSize, strokeOpacity);
     }
     if (shapeStart && shapeEnd && activeTool === 'shape') {
-      renderShapePreview(ctx, activeShape, shapeStart, shapeEnd, strokeColor, strokeSize);
+      renderShapePreview(ctx, activeShape, shapeStart, shapeEnd, strokeColor, strokeSize, strokeOpacity);
     }
-  }, [activeStroke, lassoPoints, lineStart, lineEnd, shapeStart, shapeEnd, activeTool, activeShape, strokeColor, strokeSize, pageSize]);
+  }, [activeStroke, lassoPoints, lineStart, lineEnd, shapeStart, shapeEnd, activeTool, activeShape, strokeColor, strokeSize, strokeOpacity, pageSize]);
 
   // ─── Animation loop ─────────────────────────────────────
   useEffect(() => {
@@ -166,10 +167,11 @@ const CanvasEngine: React.FC = () => {
     if (activeTool === 'pen' || activeTool === 'highlighter') {
       const color = activeTool === 'highlighter' ? highlighterColor : strokeColor;
       const size = activeTool === 'highlighter' ? highlighterSize : strokeSize;
+      const opacity = activeTool === 'highlighter' ? highlighterOpacity : strokeOpacity;
       const newStroke: Stroke = {
         id: uuid(),
         points: [{ x: pos.x, y: pos.y, pressure: e.pressure || 0.5, tiltX: e.tiltX, tiltY: e.tiltY, timestamp: Date.now() }],
-        color, size, opacity: 1,
+        color, size, opacity,
         tool: activeTool === 'highlighter' ? 'highlighter' : 'pen',
       };
       setActiveStroke(newStroke);
@@ -197,7 +199,7 @@ const CanvasEngine: React.FC = () => {
 
     setSelectedTextBoxId(null);
     setSelectedImageId(null);
-  }, [activeTool, strokeColor, strokeSize, highlighterColor, highlighterSize, zoom, panX, panY, getCanvasPos]);
+  }, [activeTool, strokeColor, strokeSize, strokeOpacity, highlighterColor, highlighterSize, highlighterOpacity, zoom, panX, panY, getCanvasPos]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     touchesRef.current.set(e.pointerId, e.nativeEvent);
@@ -313,7 +315,7 @@ const CanvasEngine: React.FC = () => {
       setLassoPoints([]);
     } else if (activeTool === 'line' && lineStart && lineEnd) {
       const lineStroke: Stroke = {
-        id: uuid(), tool: 'line', color: strokeColor, size: strokeSize, opacity: 1,
+        id: uuid(), tool: 'line', color: strokeColor, size: strokeSize, opacity: strokeOpacity,
         points: [
           { x: lineStart.x, y: lineStart.y, pressure: 0.5, timestamp: Date.now() },
           { x: lineEnd.x, y: lineEnd.y, pressure: 0.5, timestamp: Date.now() },
@@ -326,7 +328,7 @@ const CanvasEngine: React.FC = () => {
     } else if (activeTool === 'shape' && shapeStart && shapeEnd) {
       const shapePoints = generateShapePoints(activeShape, shapeStart, shapeEnd);
       const shapeStroke: Stroke = {
-        id: uuid(), tool: 'pen', color: strokeColor, size: strokeSize, opacity: 1, points: shapePoints,
+        id: uuid(), tool: 'pen', color: strokeColor, size: strokeSize, opacity: strokeOpacity, points: shapePoints,
       };
       addStrokeToActivePage(shapeStroke);
       pushHistory({ type: 'stroke_add', pageIndex: activePageIndex, data: shapeStroke, inverse: null });
@@ -336,7 +338,7 @@ const CanvasEngine: React.FC = () => {
 
     setActiveStroke(null);
     setIsDrawing(false);
-  }, [isDrawing, activeTool, activeStroke, lassoPoints, lineStart, lineEnd, shapeStart, shapeEnd, activeShape, strokeColor, strokeSize, activePageIndex, activePage, gestureState]);
+  }, [isDrawing, activeTool, activeStroke, lassoPoints, lineStart, lineEnd, shapeStart, shapeEnd, activeShape, strokeColor, strokeSize, strokeOpacity, activePageIndex, activePage, gestureState]);
 
   // ─── Eraser logic ───────────────────────────────────────
   const handleErase = useCallback((x: number, y: number) => {

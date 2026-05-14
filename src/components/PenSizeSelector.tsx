@@ -4,7 +4,21 @@ import { useAppStore } from '../store/useAppStore';
 import { PEN_SIZES, HIGHLIGHTER_SIZES } from '../utils/colors';
 
 const PenSizeSelector: React.FC = () => {
-  const { activeTool, strokeSize, setStrokeSize, highlighterSize, setHighlighterSize, eraserSize, setEraserSize, strokeColor, highlighterColor } = useNoteStore();
+  const {
+    activeTool,
+    strokeSize,
+    setStrokeSize,
+    strokeOpacity,
+    setStrokeOpacity,
+    highlighterSize,
+    setHighlighterSize,
+    highlighterOpacity,
+    setHighlighterOpacity,
+    eraserSize,
+    setEraserSize,
+    strokeColor,
+    highlighterColor,
+  } = useNoteStore();
   const { showPenSizeSelector } = useAppStore();
 
   if (!showPenSizeSelector) return null;
@@ -13,6 +27,10 @@ const PenSizeSelector: React.FC = () => {
   const currentSize = activeTool === 'highlighter' ? highlighterSize : activeTool === 'eraser' ? eraserSize : strokeSize;
   const setSize = activeTool === 'highlighter' ? setHighlighterSize : activeTool === 'eraser' ? setEraserSize : setStrokeSize;
   const previewColor = activeTool === 'highlighter' ? highlighterColor : activeTool === 'eraser' ? '#999' : strokeColor;
+
+  const showIntensity = activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'line' || activeTool === 'shape';
+  const currentOpacity = activeTool === 'highlighter' ? highlighterOpacity : strokeOpacity;
+  const setOpacity = activeTool === 'highlighter' ? setHighlighterOpacity : setStrokeOpacity;
 
   return (
     <div className="frosted-popup absolute bottom-14 left-1/2 -translate-x-1/2 p-4 z-50 animate-scale-in" style={{width: 240}}
@@ -56,6 +74,39 @@ const PenSizeSelector: React.FC = () => {
       <div className="text-center mt-2 text-xs font-mono" style={{color:'var(--color-text-secondary)'}}>
         {currentSize}px
       </div>
+
+      {showIntensity && (
+        <>
+          <div className="mt-4 text-xs font-medium" style={{color:'var(--color-text-secondary)'}}>
+            Intensity
+          </div>
+
+          <div className="mt-2 h-3 rounded-full" style={{background: 'var(--color-hover)'}}>
+            <div
+              className="h-3 rounded-full"
+              style={{
+                width: `${Math.round(currentOpacity * 100)}%`,
+                background: previewColor,
+                opacity: currentOpacity,
+              }}
+            />
+          </div>
+
+          <input
+            type="range"
+            min={activeTool === 'highlighter' ? 5 : 10}
+            max={100}
+            step={5}
+            value={Math.round(currentOpacity * 100)}
+            onChange={e => setOpacity(Number(e.target.value) / 100)}
+            className="w-full mt-3"
+          />
+
+          <div className="text-center mt-2 text-xs font-mono" style={{color:'var(--color-text-secondary)'}}>
+            {Math.round(currentOpacity * 100)}%
+          </div>
+        </>
+      )}
     </div>
   );
 };
