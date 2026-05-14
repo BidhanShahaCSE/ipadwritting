@@ -137,7 +137,7 @@ const Sidebar: React.FC = () => {
     await savePDF(pdf);
     e.target.value = '';
     try {
-      const { loadPdfDocument } = await import('../pdf/PdfEngine');
+      const { loadPdfDocument, renderPdfPageToCanvas } = await import('../pdf/PdfEngine');
       const pdfDoc = await loadPdfDocument(pdf.id, data);
       const pageCount = pdfDoc.numPages;
 
@@ -155,7 +155,22 @@ const Sidebar: React.FC = () => {
           strokes: [], textBoxes: [], images: [], audioIds: [],
         });
       }
-      const note = { id: uuid(), title: pdf.title, folderId: null, pages, pdfId: pdf.id, createdAt: Date.now(), updatedAt: Date.now() };
+      let thumbnail: string | undefined;
+      const previewCanvas = await renderPdfPageToCanvas(pdf.id, 0, data, 1);
+      if (previewCanvas) {
+        const thumbCanvas = document.createElement('canvas');
+        const maxW = 200;
+        const scale = maxW / previewCanvas.width;
+        thumbCanvas.width = maxW;
+        thumbCanvas.height = Math.max(1, Math.round(previewCanvas.height * scale));
+        const tctx = thumbCanvas.getContext('2d');
+        if (tctx) {
+          tctx.drawImage(previewCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+          thumbnail = thumbCanvas.toDataURL('image/webp', 0.7);
+        }
+      }
+
+      const note = { id: uuid(), title: pdf.title, folderId: null, pages, pdfId: pdf.id, thumbnail, createdAt: Date.now(), updatedAt: Date.now() };
       await saveNote(note);
       addNote(note);
       setActiveNote(note);

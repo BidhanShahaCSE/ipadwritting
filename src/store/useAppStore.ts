@@ -10,6 +10,7 @@ interface AppState {
   sidebarTab: 'notes' | 'pdfs' | 'folders';
   searchQuery: string;
   selectedFolderId: string | null;
+  showPageStrip: boolean;
 
   /* ── Data lists ──────────────────────── */
   notes: Note[];
@@ -38,6 +39,8 @@ interface AppState {
   setSidebarTab: (tab: 'notes' | 'pdfs' | 'folders') => void;
   setSearchQuery: (q: string) => void;
   setSelectedFolderId: (id: string | null) => void;
+  setShowPageStrip: (show: boolean) => void;
+  togglePageStrip: () => void;
 
   setNotes: (notes: Note[]) => void;
   addNote: (note: Note) => void;
@@ -72,6 +75,7 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarTab: 'notes',
   searchQuery: '',
   selectedFolderId: null,
+  showPageStrip: true,
   notes: [],
   folders: [],
   pdfs: [],
@@ -146,6 +150,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSidebarTab: (tab) => set({ sidebarTab: tab }),
   setSearchQuery: (q) => set({ searchQuery: q }),
   setSelectedFolderId: (id) => set({ selectedFolderId: id }),
+  setShowPageStrip: (show) => set({ showPageStrip: show }),
+  togglePageStrip: () => set((s) => ({ showPageStrip: !s.showPageStrip })),
 
   setNotes: (notes) => set({ notes }),
   addNote: (note) => set((s) => ({ notes: [note, ...s.notes] })),

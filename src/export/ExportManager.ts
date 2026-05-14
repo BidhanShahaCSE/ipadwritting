@@ -4,7 +4,8 @@ import JSZip from 'jszip';
 import type { Note } from '../types';
 import { PAGE_SIZES } from '../types';
 import { renderBackground, renderAllStrokes } from '../canvas/StrokeRenderer';
-import { getAudiosForNote } from '../db/database';
+import { getAudiosForNote, getPDF } from '../db/database';
+import { renderPdfPageToCanvas } from '../pdf/PdfEngine';
 
 type NotePage = Note['pages'][number];
 
@@ -62,7 +63,10 @@ async function presentFileForSaving(file: File, title: string): Promise<void> {
   triggerFileDownload(file, file.name);
 }
 
-async function renderPageToCanvas(page: NotePage): Promise<HTMLCanvasElement | null> {
+async function renderPageToCanvas(
+  page: NotePage,
+  options?: { pdfId?: string; pdfData?: ArrayBuffer }
+): Promise<HTMLCanvasElement | null> {
   const pageSize = getPageSize(page);
   const canvas = document.createElement('canvas');
   canvas.width = pageSize.width;
@@ -70,7 +74,18 @@ async function renderPageToCanvas(page: NotePage): Promise<HTMLCanvasElement | n
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  renderBackground(ctx, pageSize.width, pageSize.height, page.background, false);
+  const shouldRenderPdf = Boolean(options?.pdfId && page.pdfPageIndex !== undefined);
+  if (shouldRenderPdf && options?.pdfId && page.pdfPageIndex !== undefined) {
+    const pdfCanvas = await renderPdfPageToCanvas(options.pdfId, page.pdfPageIndex, options.pdfData, 2);
+    if (pdfCanvas) {
+      ctx.drawImage(pdfCanvas, 0, 0, pageSize.width, pageSize.height);
+    } else {
+      renderBackground(ctx, pageSize.width, pageSize.height, page.background, false);
+    }
+  } else {
+    renderBackground(ctx, pageSize.width, pageSize.height, page.background, false);
+  }
+
   renderAllStrokes(ctx, page.strokes);
 
   for (const tb of page.textBoxes) {
@@ -124,6 +139,12 @@ async function buildNotePdf(note: Note): Promise<jsPDF> {
     return pdf;
   }
 
+  let pdfData: ArrayBuffer | undefined;
+  if (note.pdfId) {
+    const linkedPdf = await getPDF(note.pdfId);
+    pdfData = linkedPdf?.data;
+  }
+
   for (let i = 0; i < note.pages.length; i++) {
     const page = note.pages[i];
     const pageSize = getPageSize(page);
@@ -132,7 +153,7 @@ async function buildNotePdf(note: Note): Promise<jsPDF> {
       pdf.addPage([pageSize.width, pageSize.height]);
     }
 
-    const canvas = await renderPageToCanvas(page);
+    const canvas = await renderPageToCanvas(page, { pdfId: note.pdfId, pdfData });
     if (!canvas) continue;
 
     const imgData = canvas.toDataURL('image/png');

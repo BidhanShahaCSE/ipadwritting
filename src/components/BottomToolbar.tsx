@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNoteStore } from '../store/useNoteStore';
+import { useAppStore } from '../store/useAppStore';
 import type { BackgroundType } from '../types';
 
 const BottomToolbar: React.FC = () => {
@@ -12,6 +13,7 @@ const BottomToolbar: React.FC = () => {
     zoom,
     setZoom,
   } = useNoteStore();
+  const { showPageStrip, togglePageStrip } = useAppStore();
 
   if (!activeNote) return null;
   const totalPages = activeNote.pages.length;
@@ -40,6 +42,20 @@ const BottomToolbar: React.FC = () => {
       <span className="text-xs font-medium px-2 whitespace-nowrap" style={{ color: 'var(--color-text-secondary)' }}>
         Page {activePageIndex + 1} / {totalPages}
       </span>
+      <button
+        className="tool-btn"
+        onClick={togglePageStrip}
+        title={showPageStrip ? 'Minimize Page Panel' : 'Show Page Panel'}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d={showPageStrip ? 'M19.5 12h-15M7.5 7.5l-3 4.5 3 4.5' : 'M4.5 12h15M16.5 7.5l3 4.5-3 4.5'}
+          />
+        </svg>
+      </button>
 
       <div className="w-px h-6 mx-1" style={{ background: 'var(--color-border)' }} />
 

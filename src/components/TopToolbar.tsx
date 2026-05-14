@@ -3,6 +3,7 @@ import { useNoteStore } from '../store/useNoteStore';
 import { useAppStore } from '../store/useAppStore';
 import type { ToolType } from '../types';
 import { readFileAsDataURL } from '../utils/helpers';
+import { saveNoteToFiles } from '../export/ExportManager';
 import { v4 as uuid } from 'uuid';
 
 const TopToolbar: React.FC = () => {
@@ -181,6 +182,21 @@ const TopToolbar: React.FC = () => {
       <button className="tool-btn" onClick={() => setShowSplitView(true)} title="Open Another">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 4.5v15m6-15v15M3.75 4.5h16.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z" />
+        </svg>
+      </button>
+
+      {/* Direct Save (includes audio as zip when present) */}
+      <button
+        className="tool-btn"
+        onClick={() => {
+          if (!activeNote) return;
+          void saveNoteToFiles(activeNote);
+        }}
+        title="Save to Files (Audio Included)"
+        disabled={!activeNote}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3.75v10.5m0 0l3.75-3.75M12 14.25L8.25 10.5M3.75 16.5v1.875A1.875 1.875 0 005.625 20.25h12.75a1.875 1.875 0 001.875-1.875V16.5" />
         </svg>
       </button>
 

@@ -7,6 +7,9 @@ import { PAGE_SIZES } from '../types';
 
 function generateThumbnail(note: ReturnType<typeof useNoteStore.getState>['activeNote']): string | undefined {
   if (!note || note.pages.length === 0) return undefined;
+  // Keep PDF note previews from the imported first-page snapshot.
+  if (note.pdfId) return note.thumbnail;
+
   const page = note.pages[0];
   const size = page.pageSize === 'custom' && page.customWidth && page.customHeight
     ? { width: page.customWidth, height: page.customHeight }
@@ -30,6 +33,17 @@ function generateThumbnail(note: ReturnType<typeof useNoteStore.getState>['activ
     ctx.fillStyle = tb.color;
     ctx.textBaseline = 'top';
     ctx.fillText(tb.content, tb.x, tb.y);
+    ctx.restore();
+  }
+
+  // Render simple image placeholders so thumbnails reflect image-heavy pages.
+  for (const img of page.images) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(img.x, img.y, img.width, img.height);
+    ctx.strokeRect(img.x, img.y, img.width, img.height);
     ctx.restore();
   }
 

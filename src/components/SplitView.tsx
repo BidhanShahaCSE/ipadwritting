@@ -13,7 +13,7 @@ const SplitView: React.FC = () => {
     <div className="fixed inset-0 z-40 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)'}}>
       <div className="frosted-popup p-6 animate-scale-in" style={{width: '90%', maxWidth: 600, maxHeight: '80vh'}}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold" style={{color: 'var(--color-text)'}}>Open Another Note</h2>
+          <h2 className="text-lg font-semibold" style={{color: 'var(--color-text)'}}>Save / Share / Open Notes</h2>
           <button onClick={() => setShowSplitView(false)} className="tool-btn">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
